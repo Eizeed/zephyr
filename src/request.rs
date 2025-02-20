@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use crate::router::HttpMethod;
+
 pub struct HttpRequest {
-    method: String,
+    method: HttpMethod,
     path: String,
     version: String,
     headers: HashMap<String, String>,
@@ -9,7 +11,7 @@ pub struct HttpRequest {
 }
 
 impl HttpRequest {
-    pub fn method(&self) -> &str {
+    pub fn method(&self) -> &HttpMethod {
         &self.method
     }
 
@@ -37,14 +39,23 @@ impl From<&[u8]> for HttpRequest {
         let mut split = str.splitn(2, "\r\n");
         let mut start_line = split.next().expect("non standart HTTP request").split(" ");
 
-        let mut split = split.next().expect("non standart HTTP request").splitn(2, "\r\n\r\n");
+        let mut split = split
+            .next()
+            .expect("non standart HTTP request")
+            .splitn(2, "\r\n\r\n");
 
         let headers_line = split.next().expect("non standart HTTP request");
         let body_line = split.next().expect("non standart HTTP request");
 
-        let method = start_line.next().expect("non standart HTTP request").to_string();
-        let path = start_line.next().expect("non standart HTTP request").to_string();
-        let version = start_line.next().expect("non standart HTTP request").to_string();
+        let method = start_line.next().expect("non standart HTTP request").into();
+        let path = start_line
+            .next()
+            .expect("non standart HTTP request")
+            .to_string();
+        let version = start_line
+            .next()
+            .expect("non standart HTTP request")
+            .to_string();
 
         let mut headers = HashMap::new();
         for header_pair in headers_line.lines() {

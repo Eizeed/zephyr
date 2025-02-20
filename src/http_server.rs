@@ -48,20 +48,26 @@ impl Server {
 
                         let req = HttpRequest::from(&buf[0..n]);
 
-                        let route = routes
-                            .get_routes()
-                            .iter()
-                            .find(|(path, func)| *path == req.path());
+                        let route =
+                            routes
+                                .get_routes()
+                                .iter()
+                                .find(|(path, handler)| {
+                                    *path == req.path() && handler.get_method() == req.method()
+                                });
 
-                        if let Some((path, func)) = route {
-                            func.call(req).await;
-                            let res = format!("Func called on path {}", path);
+                        if let Some((_path, func)) = route {
+                            let res = func.call(req).await;
+                            let body = res.get_body();
+                            let status_code = res.get_status_cide();
+
                             socket
                                 .write_all(
                                     format!(
-                                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-                                        res.len(),
-                                        res
+                                        "HTTP/1.1 {} OK\r\nContent-Length: {}\r\n\r\n{}",
+                                        status_code,
+                                        body.len(),
+                                        String::from_utf8_lossy(body),
                                     )
                                     .as_bytes(),
                                 )
